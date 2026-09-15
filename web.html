@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>公众号封面生成工具</title>
+  <style>
+    :root {
+      --bg: #0e1020; --panel: #171a2e; --stroke: #2a2f4a;
+      --text: #dfe3ff; --muted: #8a90b3; --accent: #57f0d2; --coral: #ff6a6a;
+      --green: #6cf08a; --log-bg: #0b0c17;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: radial-gradient(900px 500px at 15% 0%, rgba(87,246,210,.08), transparent 60%),
+                  var(--bg); color: var(--text); min-height: 100vh; padding: 40px 20px;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+    .card {
+      background: var(--panel); border: 1px solid var(--stroke); border-radius: 14px;
+      padding: 22px 24px; margin-bottom: 18px;
+    }
+    fieldset { border: 0; padding: 0; margin: 0; }
+    .row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .field { flex: 1; min-width: 220px; margin-bottom: 16px; }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+    select, input[type=text] {
+      width: 100%; padding: 10px 12px; font-size: 14px; color: var(--text);
+      background: #0b0c17; border: 1px solid var(--stroke); border-radius: 8px; outline: none;
+    }
+    select:focus, input[type=text]:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(87,246,210,.15); }
+    .checkline { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin: 6px 0 16px; }
+    .checkline input { accent-color: var(--accent); }
+    .actions { display: flex; align-items: center; gap: 14px; }
+    button {
+      padding: 11px 24px; font-size: 14px; font-weight: 600; border: 0; border-radius: 9px; cursor: pointer;
+      background: var(--accent); color: #06211b; transition: filter .15s, opacity .15s;
+    }
+    button:hover { filter: brightness(1.1); }
+    button:disabled { opacity: .4; cursor: not-allowed; }
+    .status { font-size: 13px; color: var(--muted); }
+    .status.ok { color: var(--green); } .status.err { color: var(--coral2); }
+    #log {
+      background: var(--log-bg); border: 1px solid var(--stroke); border-radius: 10px;
+      font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.55;
+      height: 320px; overflow-y: auto; padding: 14px; white-space: pre-wrap; word-break: break-all;
+    }
+    #log .t { color: #6f78a8; margin-right: 6px; }
+    #log .lvl { font-weight: 600; }
+    #log.lvl-SUCCESS, #log .ok { color: var(--green); }
+    #log .err { color: var(--coral2); }
+    #log .warn { color: #ffd166; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🖼️ 公众号封面生成工具</h1>
+    <p class="sub">选择标题、填写副标题，提交后实时查看生成 / 上传日志</p>
+
+    <div class="card">
+      <form id="form">
+        <div class="row">
+          <div class="field">
+            <label for="title">TITLE_TEXT（标题）</label>
+            <select id="title" name="title"></select>
+          </div>
+          <div class="field">
+            <label for="template">封面模板</label>
+            <select id="template" name="template"></select>
+          </div>
+          <div class="field">
+            <label for="subtitle">SUBTITLE_TEXT（副标题）</label>
+            <input id="subtitle" name="subtitle" type="text"
+                   placeholder="请输入副标题" autocomplete="off"/>
+          </div>
+        </div>
+        <div class="checkline">
+          <input id="upload" name="upload" type="checkbox" checked/>
+          <label for="upload" style="margin:0">生成后上传到公众号素材库</label>
+        </div>
+        <div class="checkline">
+          <input id="swapTS" name="swapTS" type="checkbox"/>
+          <label for="swapTS" style="margin:0">标题与副标题互换（突出副标题）</label>
+        </div>
+        <div class="actions">
+          <button id="run" type="submit">开始生成</button>
+          <span id="status" class="status">就绪</span>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div style="color:var(--muted);font-size:13px;margin-bottom:10px;">📄 实时运行日志</div>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <script>
+    const titleSel = document.getElementById('title');
+    const tempSel = document.getElementById('template');
+    const subInput = document.getElementById('subtitle');
+    const uploadBox = document.getElementById('upload');
+    const swapBox = document.getElementById('swapTS');
+    const runBtn = document.getElementById('run');
+    const statusEl = document.getElementById('status');
+    const logEl = document.getElementById('log');
+
+    // 初始化下拉选项
+    async function initOptions() {
+      try {
+        const res = await fetch('/api/title-options');
+        const data = await res.json();
+        titleSel.innerHTML = '';
+        data.title_options.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t; opt.textContent = t;
+          if (t === data.default_title) opt.selected = true;
+          titleSel.appendChild(opt);
+        });
+        tempSel.innerHTML = '';
+        data.templates.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t; opt.textContent = t;
+          if (t === data.default_template) opt.selected = true;
+          tempSel.appendChild(opt);
+        });
+      } catch (e) { statusEl.textContent = '加载标题选项失败: ' + e; statusEl.className = 'status err'; }
+    }
+
+    function appendLog(raw, level) {
+      const line = document.createElement('div');
+      const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+      const t = document.createElement('span'); t.className = 't'; t.textContent = '[' + time + ']';
+      const m = document.createElement('span');
+      m.textContent = raw;
+      if (level) { m.className = level; }
+      line.appendChild(t); line.appendChild(m);
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function levelClass(msg) {
+      if (/❌|失败|异常|error/i.test(msg)) return 'err';
+      if (/✅|完成|成功|🎉/i.test(msg)) return 'ok';
+      if (/⚠️|警告|warn/i.test(msg)) return 'warn';
+      return '';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = titleSel.value;
+      const subtitle = subInput.value.trim();
+      if (!title) { statusEl.textContent = '请选择标题'; statusEl.className='status err'; return; }
+
+      runBtn.disabled = true;
+      statusEl.textContent = '运行中…'; statusEl.className = 'status ok';
+      logEl.innerHTML = ''; // 清空旧日志
+
+      const body = JSON.stringify({ title, template: tempSel.value, subtitle, upload: uploadBox.checked, swap_title_subtitle: swapBox.checked });
+
+      try {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: body,
+        });
+        if (!res.ok) { appendLog('HTTP ' + res.status); return; }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          let idx;
+          while ((idx = buf.indexOf('\n')) >= 0) {
+            const line = buf.slice(0, idx).replace(/\r$/, '');
+            buf = buf.slice(idx + 1);
+            if (!line) continue;
+            if (line.startsWith('__RESULT__ ')) {
+              const r = JSON.parse(line.slice('__RESULT__ '.length));
+              statusEl.textContent = r.ok ? '✅ 成功' : '❌ 失败';
+              statusEl.className = r.ok ? 'status ok' : 'status err';
+              if (r.url) { appendLog('🔗 封面链接: ' + r.url, 'ok'); }
+              if (r.error) { appendLog('错误: ' + r.error, 'err'); }
+            } else {
+              appendLog(line, levelClass(line));
+            }
+          }
+        }
+        if (buf.trim()) { appendLog(buf.trim(), levelClass(buf)); }
+      } catch (err) {
+        statusEl.textContent = '请求失败: ' + err; statusEl.className = 'status err';
+        appendLog('❌ ' + err, 'err');
+      } finally {
+        runBtn.disabled = false;
+      }
+    });
+
+    initOptions();
+  </script>
+</body>
+</html>

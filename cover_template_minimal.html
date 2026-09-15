@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+  <title>公众号横版封面 · 极简 Minimal</title>
+
+  <style>
+    /* ============================================================
+       Cover Style 01 · 极简 Minimal
+       干净白底 + 细网格 + 克制的黑色文字，适合技术/产品向内容
+       ============================================================ */
+    :root {
+      --bg: #FAFAF7;
+      --ink: #16181D;
+      --muted: #8A8F98;
+      --accent: #2563EB;
+      --grid: rgba(22, 24, 29, 0.055);
+      --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+              "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #E8E8E3;
+      font-family: var(--font);
+      color: var(--ink);
+    }
+
+    .stage {
+      width: 900px;
+      height: 383px;
+      position: relative;
+      overflow: hidden;
+      background: var(--bg);
+      box-shadow:
+        0 30px 80px rgba(20, 22, 28, 0.14),
+        0 10px 24px rgba(20, 22, 28, 0.08),
+        inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+    }
+
+    /* 细网格背景 */
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 44px 44px;
+      pointer-events: none;
+    }
+
+    /* 左上角小标签 */
+    .tag {
+      position: absolute;
+      top: 34px;
+      left: 46px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .tag::before {
+      content: "";
+      width: 22px;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    .content {
+      position: relative;
+      height: 100%;
+      padding: 72px 78px 52px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .eyebrow {
+      display: none;
+      align-self: flex-start;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      color: var(--accent);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .title {
+      margin: 0;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      line-height: 1.12;
+      color: var(--ink);
+      max-width: 26ch;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      line-height: 1.5;
+      color: var(--muted);
+      max-width: 62ch;
+    }
+
+    #subtitle:empty { display: none; }
+
+    /* 底部信息条 */
+    .foot {
+      position: absolute;
+      left: 78px;
+      right: 78px;
+      bottom: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* 出图模式 */
+    body.export {
+      padding: 0 !important;
+      min-height: auto !important;
+      display: block !important;
+      background: var(--bg) !important;
+    }
+    body.export .stage { margin: 0 !important; }
+  </style>
+</head>
+
+<body>
+<main class="stage">
+  <div class="tag">Cover · 900×383</div>
+  <div class="content">
+    <div id="eyebrow" class="eyebrow"></div>
+    <h1 id="title" class="title"></h1>
+    <p id="subtitle" class="subtitle"></p>
+  </div>
+  <div class="foot">
+    <span>微信公众号封面</span>
+    <span>Minimal Style</span>
+  </div>
+</main>
+
+<script>
+  const titleEl = document.getElementById("title");
+  const eyebrowEl = document.getElementById("eyebrow");
+  const subtitleEl = document.getElementById("subtitle");
+
+  function splitEyebrow() {
+    if (!titleEl || !eyebrowEl) return;
+    const raw = (titleEl.textContent || "").trim();
+    if (raw.startsWith("[") && raw.includes("]")) {
+      const idx = raw.indexOf("]");
+      eyebrowEl.textContent = raw.slice(0, idx + 1);
+      eyebrowEl.style.display = "block";
+      titleEl.textContent = raw.slice(idx + 1).trim();
+    } else {
+      eyebrowEl.textContent = "";
+      eyebrowEl.style.display = "none";
+    }
+  }
+
+  function fitTextToBox(el, { minPx, maxPx, stepPx, maxLines }) {
+    if (!el) return;
+    el.style.removeProperty("transform");
+    el.style.removeProperty("transform-origin");
+    const style = getComputedStyle(el);
+    const original = parseFloat(style.fontSize);
+    const targetWidth = el.clientWidth || el.getBoundingClientRect().width;
+    const lineHeightRaw = parseFloat(style.lineHeight);
+    const lineHeight = Number.isFinite(lineHeightRaw) ? lineHeightRaw : original * 1.25;
+    const targetHeight = lineHeight * (maxLines || 2);
+    let size = Math.min(Math.max(original, minPx), maxPx);
+    el.style.fontSize = `${size}px`;
+    for (let i = 0; i < 40; i++) {
+      const tooWide = el.scrollWidth > targetWidth + 1;
+      const tooTall = el.scrollHeight > targetHeight + 1;
+      if (!tooWide && !tooTall) break;
+      size -= stepPx;
+      if (size <= minPx) { el.style.fontSize = `${minPx}px`; break; }
+      el.style.fontSize = `${size}px`;
+    }
+  }
+
+  function applyCoverRules() {
+    splitEyebrow();
+    if (subtitleEl) {
+      const v = (subtitleEl.textContent || "").trim();
+      subtitleEl.style.display = v ? "" : "none";
+      if (v) fitTextToBox(subtitleEl, { minPx: 16, maxPx: 28, stepPx: 1, maxLines: 3 });
+    }
+    if (titleEl) {
+      const v = (titleEl.textContent || "").trim();
+      fitTextToBox(titleEl, { minPx: 34, maxPx: 72, stepPx: 1, maxLines: 2 });
+      if (v.length <= 6) { titleEl.style.transform = "scale(1.04)"; titleEl.style.transformOrigin = "left center"; }
+    }
+  }
+
+  window.__coverAfterText__ = applyCoverRules;
+  document.addEventListener("DOMContentLoaded", applyCoverRules);
+</script>
+</body>
+</html>
