@@ -4,11 +4,13 @@
 # ============================================================
 
 # ---- 敏感凭据：绝不上传 ----
-# config.ini 内含微信 APPID / SECRET，务必只保留本地模板
-config/
+# config/config.ini 内含微信 APPID / SECRET，仅提交留空模板；凭据绝不入库，
+# 克隆后自行填入 config/config.ini 即可使用。
 *.ini
 *.env
 .env*
+config/*
+!config/config.ini
 
 # ---- 运行时生成物 ----
 __pycache__/
@@ -20,10 +22,9 @@ build/
 dist/
 *.log
 
+# ---- 输出与个人数据 ----
 outputs/
 logs/
-
-# ---- 归档旧实现（含历史个人代码/样式，不对外发布）----
 archive/
 
 # ---- 虚拟环境 ----
