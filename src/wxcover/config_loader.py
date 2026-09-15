@@ -18,12 +18,11 @@ def _load_config() -> configparser.ConfigParser:
         return _CONFIG_CACHE
 
     # 优先读取本工具自带的 config/config.ini（自包含部署）
-    tool_root = Path(__file__).resolve().parents[1]
+    tool_root = Path(__file__).resolve().parents[2]
     candidate_paths = [
         tool_root / "config" / "config.ini",
         Path("config/config.ini"),
         Path("../config/config.ini"),
-        Path(__file__).resolve().parents[3] / "config" / "config.ini",
     ]
 
     cfg = configparser.ConfigParser()

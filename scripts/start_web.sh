@@ -2,8 +2,8 @@
 # 公众号封面工具 - 一键启动脚本（先进入虚拟环境，再启动 Web 前端）
 set -euo pipefail
 
-# 定位到脚本所在目录（项目根目录），无论从哪调用都能正确运行
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 定位到项目根目录（脚本位于 scripts/ 下，父目录即项目根）
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_PY="$BASE_DIR/.venv/bin/python"
 
 cd "$BASE_DIR"
@@ -23,4 +23,5 @@ if [ -z "$PY" ]; then
 fi
 
 echo "✅ 使用解释器: $PY"
-exec "$PY" "$BASE_DIR/web_server.py"
+# 运行 Web 后端（包内模块）
+exec "$PY" -m wxcover.web_server

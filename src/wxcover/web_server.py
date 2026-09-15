@@ -23,10 +23,10 @@ from pathlib import Path
 from urllib.parse import urlparse
 from queue import Queue, Empty
 
-import wx_upload_cover as tool
+import wxcover.core as tool
 
-BASE_DIR = Path(__file__).resolve().parent
-HTML_FILE = BASE_DIR / "web.html"
+BASE_DIR = Path(__file__).resolve().parents[2]
+HTML_FILE = BASE_DIR / "static" / "index.html"
 HOST = "127.0.0.1"
 PORT = 8765
 

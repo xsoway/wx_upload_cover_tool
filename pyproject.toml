@@ -1,14 +1,25 @@
 [project]
 name = "wx-upload-cover-tool"
-version = "0.1.0"
+version = "0.2.0"
 description = "公众号封面图生成与上传工具（Playwright + HTML 模板，本地自包含）"
 requires-python = ">=3.11"
+readme = "README.md"
 dependencies = [
     "colorlog>=6.9.0",
     "playwright>=1.58.0",
     "requests>=2.32.5",
     "Pillow>=10.0.0",
 ]
+
+[project.scripts]
+wx-cover = "wxcover.web_server:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.playwright]
 # 运行前需执行: playwright install chromium

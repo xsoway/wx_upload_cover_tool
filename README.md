@@ -49,7 +49,7 @@
   </tr>
 </table>
 
-> 上图为五套内置样式的实际渲染效果。新增样式只需加一个 HTML 模板文件，在 `wx_upload_cover.py` 的 `TEMPLATES` 字典注册即可。
+> 上图为五套内置样式的实际渲染效果。新增样式只需加一个 HTML 模板文件，放到 `templates/`，在 `src/wxcover/core.py` 的 `TEMPLATES` 字典注册即可。
 
 ---
 
@@ -102,7 +102,9 @@ SECRET = 你的SECRET
 ### 1) Web 前端（带实时日志）
 
 ```bash
-uv run python web_server.py
+bash scripts/start_web.sh
+# 或等价：
+uv run python -m wxcover.web_server
 ```
 
 浏览器打开：**http://127.0.0.1:8765**
@@ -117,38 +119,42 @@ uv run python web_server.py
 ### 2) 命令行本地运行
 
 ```bash
-uv run python wx_upload_cover.py
+uv run python -m wxcover.core
 ```
 
-会在 `output/generated_cover_html/` 生成封面，并按配置决定是否上传。
+会在 `outputs/generated_cover_html/` 生成封面，并按配置决定是否上传。
 
 ---
 
 ## 🧩 自定义 / 新增封面样式
 
-每个样式是一个独立的 HTML 模板文件（如 `cover_template_minimal.html`），需满足渲染契约：
+每个样式是一个独立的 HTML 模板文件（如 `templates/minimal.html`），需满足渲染契约：
 
 - `<main class="stage">` 固定 **900×383**；
 - 存在 `#title`、`#subtitle` 元素（可选 `#eyebrow`）；
 - 提供一个 `window.__coverAfterText__()` 函数，在文字注入后做自适应排版；
 - 支持 `body.export` 类，出图时去掉外层留白。
 
-新增后，在 `wx_upload_cover.py` 的 `TEMPLATES` 字典里注册名称与文件名即可自动出现在 Web 下拉中。
+新增后，在 `src/wxcover/core.py` 的 `TEMPLATES` 字典里注册名称与文件名即可自动出现在 Web 下拉中。
 
 ---
 
 ## 📁 目录结构
 
 ```
-├── wx_upload_cover.py          # 核心逻辑（生成 / 规范化 / 上传）
-├── web_server.py               # Web 后端（流式日志）
-├── web.html                    # Web 前端
-├── cover_template_*.html       # 封面样式模板（极简/深空/暖纸/霓虹/清新）
-├── common/                     # logger / config_loader（自包含）
+├── src/wxcover/                # Python 源码包
+│   ├── core.py                 # 核心逻辑（生成 / 规范化 / 上传）
+│   ├── web_server.py           # Web 后端（流式日志）
+│   ├── logger.py               # 日志模块
+│   └── config_loader.py        # 配置读取
+├── templates/                  # 封面样式模板（minimal/cosmic/paper/neon/fresh）
+├── static/index.html           # Web 前端
+├── scripts/start_web.sh        # 一键启动脚本
 ├── docs/preview/               # 封面样式预览图
 ├── config/config.ini           # 微信 appid/secret（不入库）
-├── output/  logs/              # 运行生成物（不入库）
-└── start_web.sh                # 一键启动脚本
+├── outputs/  logs/             # 运行生成物（不入库）
+├── pyproject.toml              # 项目配置（src-layout 包）
+└── README.md
 ```
 
 ---

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @Time     : 2026/1/31 12:10
-# @Filename : wx_upload_cover.py
+# @Filename : core.py
 
 """
 功能（极简版）：
@@ -22,15 +22,15 @@ import requests
 from PIL import Image
 from playwright.sync_api import sync_playwright
 
-from common.logger import GetLogger
-from common.config_loader import get_wechat_config
+from wxcover.logger import GetLogger
+from wxcover.config_loader import get_wechat_config
 
 logger = GetLogger.get_logger("wx_upload_cover_tool")
 
 WECHAT_API = "https://api.weixin.qq.com"
 
 # 工具根目录（保证任意工作目录下都能找到模板/输出）
-TOOL_ROOT = Path(__file__).resolve().parent
+TOOL_ROOT = Path(__file__).resolve().parents[2]
 
 # 可选的标题（公众号封面下拉，公开通用占位）
 TITLE_OPTIONS = [
@@ -44,15 +44,15 @@ TITLE_OPTIONS = [
     "思考手记",
 ]
 DEFAULT_TITLE_TEXT = TITLE_OPTIONS[0]
-DEFAULT_HTML_FILE = "cover_template_minimal.html"
+DEFAULT_HTML_FILE = "minimal.html"
 
 # 可选封面模板：名称 -> 模板文件名（公开样式）
 TEMPLATES = {
-    "极简": "cover_template_minimal.html",
-    "深空": "cover_template_cosmic.html",
-    "暖纸": "cover_template_paper.html",
-    "霓虹": "cover_template_neon.html",
-    "清新": "cover_template_fresh.html",
+    "极简": "minimal.html",
+    "深空": "cosmic.html",
+    "暖纸": "paper.html",
+    "霓虹": "neon.html",
+    "清新": "fresh.html",
 }
 DEFAULT_TEMPLATE = "极简"
 
@@ -87,10 +87,13 @@ def render_cover_image_by_html(
     warmup_ms: int = 800,
     wait_ms: int = 300,
 ) -> str:
-    """
-    用 Playwright 渲染本地 HTML 模板，并注入两段文字生成封面 PNG
-    """
-    html_path = _resolve(html_file)
+    """用 Playwright 渲染本地 HTML 模板，并注入两段文字生成封面 PNG"""
+    # 模板统一存放在 templates/ 下：裸文件名优先按 templates/ 解析，绝对路径直接使用
+    html_path = Path(html_file)
+    if not html_path.is_absolute():
+        html_path = _resolve(TOOL_ROOT / "templates" / html_file)
+    else:
+        html_path = html_path.resolve()
     if not html_path.exists():
         raise FileNotFoundError(f"HTML file not found: {html_path}")
 
@@ -286,7 +289,7 @@ def upload_only_cover(
     appid: str,
     secret: str,
     image_path: str,
-    out_dir: str = "output/wx_cover_upload",
+    out_dir: str = "outputs/wx_cover_upload",
     normalize: bool = True,
 ) -> CoverUploadResult:
     try:
@@ -327,8 +330,8 @@ def generate_and_upload_cover(
     html_file: str = DEFAULT_HTML_FILE,
     template: Optional[str] = None,
     swap_title_subtitle: bool = False,
-    generated_dir: str = "output/generated_cover_html",
-    upload_dir: str = "output/wx_cover_upload",
+    generated_dir: str = "outputs/generated_cover_html",
+    upload_dir: str = "outputs/wx_cover_upload",
     normalize: bool = True,
     upload: bool = True,
 ) -> CoverUploadResult:
@@ -387,12 +390,19 @@ def generate_and_upload_cover(
 # 本地直接运行：生成封面(HTML) -> 上传
 # =========================
 
-    SUBTITLE_TEXT = "示例副标题：一句话说明这篇文章讲了什么"
+def main():
+    """命令行入口：生成一张示例封面并上传（未配置凭据时仅本地生成）。"""
+    title_text = "示例标题"
+    subtitle_text = "示例副标题：一句话说明这篇文章讲了什么"
 
     res = generate_and_upload_cover(
-        title_text=TITLE_TEXT,
-        subtitle_text=SUBTITLE_TEXT,
+        title_text=title_text,
+        subtitle_text=subtitle_text,
         upload=True,
     )
     print(res)
+
+
+if __name__ == "__main__":
+    main()
 

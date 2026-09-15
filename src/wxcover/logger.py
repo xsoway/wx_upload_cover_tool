@@ -74,8 +74,9 @@ class GetLogger:
         if module_name in cls._loggers:
             return cls._loggers[module_name]
 
-        # ========== 创建日志目录 ==========
-        log_dir = os.path.join(os.getcwd(), "logs")
+        # ========== 创建日志目录（基于项目根，任意工作目录一致） ==========
+        tool_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        log_dir = os.path.join(tool_root, "logs")
         os.makedirs(log_dir, exist_ok=True)
 
         # ========== 文件名格式 ==========
